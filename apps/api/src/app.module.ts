@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module.js';
+import { CatalogModule } from './catalog/catalog.module.js';
 import { AuthGuard } from './common/auth.guard.js';
 import { ClientIpThrottlerGuard } from './common/client-ip-throttler.guard.js';
 import { ConfigModule } from './config/config.module.js';
@@ -31,6 +32,7 @@ import { UsersModule } from './users/users.module.js';
     AuthModule,
     ShopsModule,
     UsersModule,
+    CatalogModule,
   ],
   controllers: [HealthController],
   providers: [

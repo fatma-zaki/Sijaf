@@ -1,4 +1,4 @@
-import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
+import type { FieldValues, Path, UseFormReturn, UseFormSetError } from "react-hook-form";
 import type { ActionResult } from "./action-result";
 
 /**
@@ -21,4 +21,16 @@ export function applyActionErrors<Values extends FieldValues, Data>(
   }
   if (!assigned) setError("root.server", { type: "server", message: result.message });
   return true;
+}
+
+/**
+ * register + defaultValue: الـ register لوحده مابيحطش قيمة في الـ HTML اللي السيرفر بيرندره،
+ * فالحقول بتبان فاضية لحد ما الـ JS يحمّل (واضح على النت الضعيف). ده بيحط القيمة من الأول.
+ */
+export function withDefault<Values extends FieldValues>(form: UseFormReturn<Values>, name: Path<Values>) {
+  const value: unknown = form.getValues(name);
+  return {
+    ...form.register(name),
+    defaultValue: value === null || value === undefined ? undefined : String(value),
+  };
 }

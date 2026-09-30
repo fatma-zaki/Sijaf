@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Hand, Plus, Save, Zap } from "lucide-react";
+import { FileSpreadsheet, Hand, ListChecks, Plus, Save, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ChoiceCard } from "@/components/ui/choice-card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Input, InputWithUnit, Select } from "@/components/ui/field";
 import { FilterChips } from "@/components/ui/filter-chips";
 import { NumberField } from "@/components/ui/number-field";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { TierCard } from "@/components/ui/tier-card";
@@ -157,6 +160,48 @@ export function DialogDemo() {
           </Field>
         </div>
       </Dialog>
+    </>
+  );
+}
+
+export function ChoiceDemo() {
+  const [method, setMethod] = useState<"excel" | "template">("excel");
+  return (
+    <div className="flex flex-col gap-3 md:flex-row">
+      <ChoiceCard
+        icon={<FileSpreadsheet aria-hidden />}
+        title="استيراد من Excel"
+        badge={<StatusBadge tone="brand">الأسرع</StatusBadge>}
+        description="عندك الأسعار في شيت؟ ارفعه وإحنا نرتب الأعمدة."
+        selected={method === "excel"}
+        onSelect={() => setMethod("excel")}
+      />
+      <ChoiceCard
+        icon={<ListChecks aria-hidden />}
+        title="ابدأ بأسعار نموذجية"
+        description="قائمة جاهزة بأشهر الخامات، وعدّل أسعارها لأسعارك."
+        selected={method === "template"}
+        onSelect={() => setMethod("template")}
+      />
+    </div>
+  );
+}
+
+export function ConfirmDemo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="danger" onClick={() => setOpen(true)}>
+        حذف الخامة
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="حذف «قطيفة تركي»؟"
+        description="هتختفي من الكتالوج ومن الاختيارات في العروض الجديدة."
+        confirmLabel="حذف الخامة"
+        onConfirm={async () => null}
+      />
     </>
   );
 }

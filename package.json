@@ -6,7 +6,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run build -w @sijaf/shared && concurrently -k -n shared,api,web -c gray,blue,green \"npm run dev -w @sijaf/shared\" \"npm run start:dev -w @sijaf/api\" \"npm run dev -w @sijaf/web\"",
+    "dev": "npm run build -w @sijaf/shared && concurrently -k -n shared,api,web -c gray,blue,green \"npm run dev -w @sijaf/shared\" \"npm run start:dev -w @sijaf/api\" \"wait-on -t 120000 http-get://localhost:4000/health && npm run dev -w @sijaf/web\"",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run build -w @sijaf/shared && npm run typecheck --workspaces --if-present",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "wait-on": "^9.5.1"
   }
 }

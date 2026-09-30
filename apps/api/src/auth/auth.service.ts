@@ -3,6 +3,7 @@ import { ConflictException, ForbiddenException, Inject, Injectable, Unauthorized
 import type { AuthTokens, LoginData, RegisterData } from '@sijaf/shared';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
+import { insertTemplateModels } from '../catalog/model-seed.js';
 import { DB, type Db } from '../db/db.module.js';
 import { shops, users } from '../db/schema.js';
 import { TokensService } from './tokens.service.js';
@@ -50,6 +51,8 @@ export class AuthService {
           canQuote: true,
         })
         .returning();
+      // كل محل جديد بيبدأ بالـ 8 موديلات الجاهزة
+      await insertTemplateModels(tx, shop.id);
       return user;
     });
 

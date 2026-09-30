@@ -19,7 +19,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Stepper } from "@/components/ui/stepper";
 import { TabNav } from "@/components/ui/tab-nav";
 import { formatCurrency, formatPercent } from "@/lib/format";
-import { ControlsDemo, DialogDemo, TierDemo, UploadDemo } from "./interactive-demos";
+import { ChoiceDemo, ConfirmDemo, ControlsDemo, DialogDemo, TierDemo, UploadDemo } from "./interactive-demos";
 import { colorTokens, quoteSteps, sampleMaterials, typeScale, type SampleMaterial } from "./samples";
 
 export const metadata: Metadata = {
@@ -109,6 +109,7 @@ export default function DesignSystemPage() {
           <Button variant="secondary">استيراد من Excel <Upload aria-hidden /></Button>
           <Button variant="soft">اختر</Button>
           <Button variant="ghost">إضافة بند <Plus aria-hidden /></Button>
+          <Button variant="danger">حذف نهائي</Button>
           <Button variant="danger-ghost">حذف</Button>
           <Button disabled>معطّل</Button>
         </div>
@@ -252,9 +253,14 @@ export default function DesignSystemPage() {
         </div>
       </Section>
 
-      <Section title="النافذة (Dialog)">
-        <div>
+      <Section title="كروت الاختيار (ChoiceCard)">
+        <ChoiceDemo />
+      </Section>
+
+      <Section title="النوافذ (Dialog وConfirmDialog)">
+        <div className="flex flex-wrap gap-3">
           <DialogDemo />
+          <ConfirmDemo />
         </div>
       </Section>
     </main>

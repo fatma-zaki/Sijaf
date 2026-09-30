@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { initials } from "./avatar";
 import { buttonStyles } from "./button";
 import { ConfidenceBadge } from "./confidence";
+import { Field, Input, Select } from "./field";
 import { FilterChips } from "./filter-chips";
 import { NumberField } from "./number-field";
 import { SegmentedControl } from "./segmented-control";
@@ -135,5 +136,35 @@ describe("ConfidenceBadge", () => {
   it("uses the warning style below 70%", () => {
     render(<ConfidenceBadge value={64} />);
     expect(screen.getByLabelText("الثقة 64%").className).toContain("bg-warning-soft");
+  });
+});
+
+describe("Field", () => {
+  it("names a select by its label only, not by its options", () => {
+    render(
+      <Field label="الطبقة">
+        <Select defaultValue="main">
+          <option value="main">قماش أساسي</option>
+          <option value="sheer">شيفون</option>
+        </Select>
+      </Field>,
+    );
+    expect(screen.getByRole("combobox", { name: "الطبقة" })).toBeInTheDocument();
+  });
+
+  it("links hints and errors to the control", () => {
+    const { rerender } = render(
+      <Field label="السعر" hint="بالجنيه">
+        <Input />
+      </Field>,
+    );
+    expect(screen.getByLabelText("السعر")).toHaveAccessibleDescription("بالجنيه");
+    rerender(
+      <Field label="السعر" error="اكتب السعر">
+        <Input aria-invalid />
+      </Field>,
+    );
+    expect(screen.getByLabelText("السعر")).toHaveAccessibleDescription("اكتب السعر");
+    expect(screen.getByRole("alert")).toHaveTextContent("اكتب السعر");
   });
 });

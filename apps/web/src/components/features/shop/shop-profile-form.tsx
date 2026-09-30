@@ -14,7 +14,7 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { FormError } from "@/components/ui/form-error";
-import { applyActionErrors } from "@/lib/forms";
+import { applyActionErrors, withDefault } from "@/lib/forms";
 import { updateShopProfile } from "./actions";
 
 type ShopProfileFormProps = {
@@ -48,7 +48,7 @@ export function ShopProfileForm({ shop, submitLabel, onSaved, secondaryAction }:
     <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
       <FormError message={errors.root?.server?.message} />
       <Field label="اسم المحل" error={errors.name?.message}>
-        <Input autoComplete="organization" aria-invalid={errors.name ? true : undefined} {...form.register("name")} />
+        <Input autoComplete="organization" aria-invalid={errors.name ? true : undefined} {...withDefault(form, "name")} />
       </Field>
       <Field label="رقم واتساب المحل" hint="العروض بتتبعت للعملاء منه" error={errors.whatsapp?.message}>
         <Input
@@ -58,11 +58,11 @@ export function ShopProfileForm({ shop, submitLabel, onSaved, secondaryAction }:
           placeholder="01xxxxxxxxx"
           aria-invalid={errors.whatsapp ? true : undefined}
           className="text-end"
-          {...form.register("whatsapp")}
+          {...withDefault(form, "whatsapp")}
         />
       </Field>
       <Field label="العنوان" error={errors.address?.message}>
-        <Input autoComplete="street-address" placeholder="المنطقة والشارع" {...form.register("address")} />
+        <Input autoComplete="street-address" placeholder="المنطقة والشارع" {...withDefault(form, "address")} />
       </Field>
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
         <Button type="submit" size="lg" disabled={isSubmitting} className="min-w-45">

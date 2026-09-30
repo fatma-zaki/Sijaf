@@ -53,7 +53,7 @@ export function SegmentedControl<Value extends string>({
             aria-checked={checked}
             tabIndex={checked ? 0 : -1}
             onClick={() => onValueChange(option.value)}
-            className="touch-target inline-flex h-8.5 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-sm text-sm font-semibold text-ink-muted aria-checked:bg-surface aria-checked:text-primary aria-checked:shadow-card [&_svg]:size-4"
+            className="touch-target inline-flex h-8.5 flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-sm px-3 text-sm font-semibold text-ink-muted aria-checked:bg-surface aria-checked:text-primary aria-checked:shadow-card [&_svg]:size-4"
           >
             {option.icon}
             {option.label}

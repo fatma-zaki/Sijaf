@@ -28,6 +28,9 @@ design/          التصميم (مصدر الحقيقة للشكل)
 - **الفني مابيشوفش `purchase_price` ولا هامش الربح**: الـ DTOs بتتبني يدوي (`common/dto.ts`) ومابترجعش أعمدة حساسة؛ الأسعار الحساسة هتبقى في جداول/DTOs لصاحب المحل بس.
 - التيستات e2e على PGlite (Postgres في الذاكرة) بنفس الـ migrations: `test/test-app.ts`. أي endpoint جديد ليه تيست صلاحيات وعزل محلات.
 - Claude API من الباك بس، واسم الموديل من `ANTHROPIC_MODEL`.
+- الكتالوج (`src/catalog/`): `purchase_price` في `materials` بيطلع في `MaterialDto` لصاحب المحل بس؛ الفني بياخد `MaterialPublicDto` من `/materials/options`. أي endpoint جديد بيرجّع خامات لازم يفرّق بالـ role، وليه تيست إن الفني مايشوفش سعر الشراء.
+- القوالب («ابدأ بأسعار نموذجية» و«8 موديلات جاهزة») في `src/catalog/templates.ts`؛ الموديلات بتتضاف لكل محل جديد عند التسجيل.
+- مطابقة الأسماء العربي (موردين/خامات) بـ `arabicKey` من shared (بيوحّد أ/إ/آ وة/ه وى/ي).
 
 ## الفرونت (`apps/web`)
 
@@ -35,6 +38,12 @@ design/          التصميم (مصدر الحقيقة للشكل)
 - الجلسة في كوكيز httpOnly (`lib/auth/cookies.ts`). `src/proxy.ts` بيحمي الصفحات وبيجدد الـ access token بالـ refresh token قبل الرندر. `getSession()` / `requireOwner()` / `requireQuoter()` في `lib/auth/session.ts`.
 - أخطاء الـ API بتتحط على حقول الفورم بـ `applyActionErrors()` (`lib/forms.ts`).
 - الصلاحيات في الواجهة (`components/layout/nav-items.ts`) للعرض بس؛ الحماية الحقيقية في الباك وفي `require*()`.
+- `Field` بياخد control واحد وبيربطه بالـ label بـ `htmlFor`/`id` (مش لافف عليه، عشان اسم الـ select مايبقاش فيه نصوص الاختيارات) وبالـ hint/الخطأ بـ `aria-describedby`.
+- الفورمز اللي بتترندر على السيرفر ببيانات (تعديل) تستخدم `withDefault(form, name)` بدل `form.register(name)`، عشان القيم تظهر قبل ما الـ JS يحمّل.
+- أي نافذة فيها فورم تستخدم `useId()` لـ id الفورم؛ ممكن يبقى فيه نسختين من نفس النافذة في الصفحة.
+- الفلاتر والبحث في الـ URL (`useUrlParams`)، والصفحة تفضل Server Component.
+- المكوّنات اللي بتتحط في أعمدة عرضها متغير تستخدم container queries (`@container` و`@min-[46rem]:`) مش breakpoints الشاشة.
+- معادلات الأمتار والبنود الإضافية في `packages/shared/src/pricing` (functions نقية ومتختبرة)؛ الفرونت بيستخدمها للمعاينة والباك للحساب.
 
 ## التصميم
 
