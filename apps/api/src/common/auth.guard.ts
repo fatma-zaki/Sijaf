@@ -9,7 +9,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { userRoles, type AccessTokenClaims, type UserRole } from '@sijaf/shared';
-import { IS_PUBLIC, ROLES, type AuthedRequest } from './auth.decorators.js';
+import { IS_PUBLIC, QUOTERS, ROLES, type AuthedRequest } from './auth.decorators.js';
 
 function isClaims(value: unknown): value is AccessTokenClaims {
   if (typeof value !== 'object' || value === null) return false;
@@ -50,6 +50,9 @@ export class AuthGuard implements CanActivate {
     const roles = this.reflector.getAllAndOverride<UserRole[] | undefined>(ROLES, targets);
     if (roles && !roles.includes(payload.role)) {
       throw new ForbiddenException('الصفحة دي لصاحب المحل بس');
+    }
+    if (this.reflector.getAllAndOverride<boolean>(QUOTERS, targets) && !payload.canQuote) {
+      throw new ForbiddenException('حسابك مش مسموحله يعمل عروض أسعار');
     }
     return true;
   }

@@ -7,15 +7,32 @@ import { drizzle } from 'drizzle-orm/pglite';
 import { migrate } from 'drizzle-orm/pglite/migrator';
 import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
+import type { AnalyzerOutcome } from '../src/ai/curtain-analyzer.js';
+import { CURTAIN_ANALYZER, CurtainAnalyzer } from '../src/ai/curtain-analyzer.js';
 import { ENV, loadEnv } from '../src/config/env.js';
 import { configureApp } from '../src/configure-app.js';
 import { DB } from '../src/db/db.module.js';
 import * as schema from '../src/db/schema.js';
+import { MemoryStorage, STORAGE, type StoredFile } from '../src/storage/storage.js';
 
 const migrationsFolder = fileURLToPath(new URL('../drizzle', import.meta.url));
 
+/** محلل صور وهمي: التيست بيحدد هو هيرجّع إيه */
+export class FakeAnalyzer extends CurtainAnalyzer {
+  next: AnalyzerOutcome = { status: 'unavailable' };
+  calls = 0;
+
+  analyze(_image?: StoredFile): Promise<AnalyzerOutcome> {
+    this.calls += 1;
+    return Promise.resolve(this.next);
+  }
+}
+
 export type TestApp = {
   app: NestExpressApplication;
+  db: ReturnType<typeof drizzle<typeof schema>>;
+  storage: MemoryStorage;
+  analyzer: FakeAnalyzer;
   http: () => ReturnType<typeof request>;
   close: () => Promise<void>;
 };
@@ -25,6 +42,8 @@ export async function createTestApp(): Promise<TestApp> {
   const client = new PGlite();
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder });
+  const storage = new MemoryStorage();
+  const analyzer = new FakeAnalyzer();
 
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(ENV)
@@ -37,6 +56,10 @@ export async function createTestApp(): Promise<TestApp> {
     )
     .overrideProvider(DB)
     .useValue(db)
+    .overrideProvider(STORAGE)
+    .useValue(storage)
+    .overrideProvider(CURTAIN_ANALYZER)
+    .useValue(analyzer)
     .compile();
 
   const app = moduleRef.createNestApplication<NestExpressApplication>();
@@ -45,6 +68,9 @@ export async function createTestApp(): Promise<TestApp> {
 
   return {
     app,
+    db,
+    storage,
+    analyzer,
     http: () => request(app.getHttpServer()),
     close: async () => {
       await app.close();

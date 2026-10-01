@@ -1,5 +1,8 @@
 import { sql } from 'drizzle-orm';
 import {
+  analysisStatuses,
+  componentSlots,
+  componentSources,
   curtainStyles,
   itemBases,
   materialLayers,
@@ -8,10 +11,26 @@ import {
   operations,
   paymentMethods,
   pricingMethods,
+  quoteStatuses,
   stockStatuses,
   tiers,
+  type PricingEdits,
 } from '@sijaf/shared';
-import { boolean, index, integer, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  date,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 /*
  * كل الجداول عليها RLS من غير policies: Supabase بيفتح الـ public schema للـ REST API،
@@ -199,3 +218,185 @@ export type SupplierRow = typeof suppliers.$inferSelect;
 export type MaterialRow = typeof materials.$inferSelect;
 export type CurtainModelRow = typeof curtainModels.$inferSelect;
 export type ModelItemRow = typeof modelItems.$inferSelect;
+
+// ---------- قواعد التسعير ----------
+
+const decimal = (name: string) => numeric(name, { precision: 4, scale: 2, mode: 'number' });
+
+/** إعدادات «تكاليف وقواعد تانية»؛ صف واحد لكل محل (بيتعمل بالقيم الافتراضية أول مرة) */
+export const pricingRules = pgTable('pricing_rules', {
+  shopId: uuid('shop_id')
+    .primaryKey()
+    .references(() => shops.id, { onDelete: 'cascade' }),
+  installationPerWindow: money('installation_per_window').notNull(),
+  cornicePerMeter: money('cornice_per_meter').notNull(),
+  defaultTopWidthM: decimal('default_top_width_m').notNull(),
+  depositPercent: integer('deposit_percent').notNull(),
+  validityDays: integer('validity_days').notNull(),
+  railAllowance: decimal('rail_allowance').notNull(),
+  flatAllowance: decimal('flat_allowance').notNull(),
+  dropAllowance: decimal('drop_allowance').notNull(),
+  roundingStep: decimal('rounding_step').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+}).enableRLS();
+
+// ---------- العملاء والعروض ----------
+
+export const clients = pgTable(
+  'clients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: shopId(),
+    name: text('name').notNull(),
+    phone: text('phone').notNull(),
+    area: text('area').notNull().default(''),
+    address: text('address').notNull().default(''),
+    notes: text('notes').notNull().default(''),
+    ...timestamps,
+  },
+  (table) => [uniqueIndex('clients_shop_phone_idx').on(table.shopId, table.phone)],
+).enableRLS();
+
+export const quoteStatus = pgEnum('quote_status', quoteStatuses);
+export const analysisStatus = pgEnum('analysis_status', analysisStatuses);
+export const componentSlot = pgEnum('component_slot', componentSlots);
+export const componentSource = pgEnum('component_source', componentSources);
+export const lineKind = pgEnum('line_kind', ['fabric', 'labor', 'track', 'cornice', 'installation', 'model_item', 'manual']);
+export const lineSource = pgEnum('line_source', ['system', 'manual']);
+export const quoteEventType = pgEnum('quote_event_type', [
+  'created',
+  'photo_added',
+  'analyzed',
+  'component_changed',
+  'priced',
+  'status_changed',
+  'sent_whatsapp',
+  'link_opened',
+  'pdf_downloaded',
+]);
+
+export const quotes = pgTable(
+  'quotes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: shopId(),
+    /** رقم العرض في المحل (#1025) */
+    number: integer('number').notNull(),
+    clientId: uuid('client_id')
+      .notNull()
+      .references(() => clients.id, { onDelete: 'restrict' }),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    status: quoteStatus('status').notNull().default('draft'),
+    roomLabel: text('room_label').notNull().default(''),
+    widthCm: integer('width_cm'),
+    heightCm: integer('height_cm'),
+    windowCount: integer('window_count').notNull().default(1),
+    modelId: uuid('model_id').references(() => curtainModels.id, { onDelete: 'set null' }),
+    /** نسخة من اسم الموديل عشان العرض يفضل مفهوم لو الموديل اتمسح */
+    modelName: text('model_name'),
+    modelSource: componentSource('model_source'),
+    modelConfidence: integer('model_confidence'),
+    aiModelId: uuid('ai_model_id'),
+    operation: operation('operation').notNull().default('manual'),
+    optionalItemIds: uuid('optional_item_ids')
+      .array()
+      .notNull()
+      .default(sql`'{}'::uuid[]`),
+    useDefaultCornice: boolean('use_default_cornice').notNull().default(false),
+    tier: tier('tier'),
+    photoPaths: text('photo_paths')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    analysisStatus: analysisStatus('analysis_status'),
+    aiResult: jsonb('ai_result'),
+    aiConfidence: integer('ai_confidence'),
+    edits: jsonb('edits').$type<PricingEdits>(),
+    subtotal: money('subtotal').notNull().default(0),
+    discount: money('discount').notNull().default(0),
+    total: money('total').notNull().default(0),
+    depositPercent: integer('deposit_percent').notNull().default(0),
+    depositAmount: money('deposit_amount').notNull().default(0),
+    validUntil: date('valid_until'),
+    publicToken: text('public_token').notNull().unique(),
+    internalNotes: text('internal_notes').notNull().default(''),
+    /** السعر النهائي بعد المعاينة (لتقرير دقة التسعير) */
+    finalTotal: money('final_total'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('quotes_shop_number_idx').on(table.shopId, table.number),
+    index('quotes_shop_status_idx').on(table.shopId, table.status),
+    index('quotes_client_idx').on(table.clientId),
+  ],
+).enableRLS();
+
+export const quoteComponents = pgTable(
+  'quote_components',
+  {
+    quoteId: uuid('quote_id')
+      .notNull()
+      .references(() => quotes.id, { onDelete: 'cascade' }),
+    shopId: shopId(),
+    slot: componentSlot('slot').notNull(),
+    materialId: uuid('material_id').references(() => materials.id, { onDelete: 'set null' }),
+    included: boolean('included').notNull(),
+    source: componentSource('source').notNull(),
+    confidence: integer('confidence'),
+    aiMaterialId: uuid('ai_material_id'),
+    aiIncluded: boolean('ai_included'),
+  },
+  (table) => [primaryKey({ columns: [table.quoteId, table.slot] })],
+).enableRLS();
+
+export const quoteItems = pgTable(
+  'quote_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    quoteId: uuid('quote_id')
+      .notNull()
+      .references(() => quotes.id, { onDelete: 'cascade' }),
+    shopId: shopId(),
+    key: text('key').notNull(),
+    kind: lineKind('kind').notNull(),
+    label: text('label').notNull(),
+    materialId: uuid('material_id').references(() => materials.id, { onDelete: 'set null' }),
+    quantity: numeric('quantity', { precision: 12, scale: 2, mode: 'number' }).notNull(),
+    quantityLabel: text('quantity_label').notNull(),
+    unitPrice: money('unit_price').notNull(),
+    /** سعر الشراء وقت العرض (للتقارير)؛ لصاحب المحل بس */
+    unitCost: money('unit_cost'),
+    lineTotal: money('line_total').notNull(),
+    source: lineSource('source').notNull(),
+    isEdited: boolean('is_edited').notNull().default(false),
+    originalQuantity: numeric('original_quantity', { precision: 12, scale: 2, mode: 'number' }),
+    originalUnitPrice: money('original_unit_price'),
+    sortOrder: integer('sort_order').notNull(),
+  },
+  (table) => [index('quote_items_quote_idx').on(table.quoteId)],
+).enableRLS();
+
+export const quoteEvents = pgTable(
+  'quote_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    quoteId: uuid('quote_id')
+      .notNull()
+      .references(() => quotes.id, { onDelete: 'cascade' }),
+    shopId: shopId(),
+    type: quoteEventType('type').notNull(),
+    actorId: uuid('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('quote_events_quote_idx').on(table.quoteId)],
+).enableRLS();
+
+export type PricingRulesRow = typeof pricingRules.$inferSelect;
+export type ClientRow = typeof clients.$inferSelect;
+export type QuoteRow = typeof quotes.$inferSelect;
+export type QuoteComponentRow = typeof quoteComponents.$inferSelect;
+export type QuoteItemRow = typeof quoteItems.$inferSelect;

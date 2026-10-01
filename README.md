@@ -32,6 +32,8 @@ npm run dev        # web: http://localhost:3000 · api: http://localhost:4000
   - `DATABASE_URL` — Supabase transaction pooler (port 6543)
   - `JWT_SECRET` — 32 حرف عشوائي على الأقل
   - `INTERNAL_API_SECRET` — 32 حرف عشوائي على الأقل (نفس القيمة في الويب)
+  - `SUPABASE_URL` و`SUPABASE_SERVICE_ROLE_KEY` — لتخزين صور العروض (الـ bucket الخاص `quote-photos` بيتعمل لوحده)
+  - `ANTHROPIC_API_KEY` (و`ANTHROPIC_MODEL` اختياري، الافتراضي `claude-opus-5`) — لتحليل الصور
 - الـ migrations مابتتطبقش وقت الـ deploy؛ طبّقها من جهازك قبلها: `npm run db:migrate` (بيستخدم `DIRECT_URL`).
 - اتأكد إن `https://<api>.vercel.app/health` بيرجّع `{"status":"ok"}`.
 

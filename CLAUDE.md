@@ -27,7 +27,10 @@ design/          التصميم (مصدر الحقيقة للشكل)
 - كل endpoint محمي افتراضيًا (`AuthGuard` global)؛ `@Public()` للاستثناءات و`@Roles('owner')` لصاحب المحل.
 - **الفني مابيشوفش `purchase_price` ولا هامش الربح**: الـ DTOs بتتبني يدوي (`common/dto.ts`) ومابترجعش أعمدة حساسة؛ الأسعار الحساسة هتبقى في جداول/DTOs لصاحب المحل بس.
 - التيستات e2e على PGlite (Postgres في الذاكرة) بنفس الـ migrations: `test/test-app.ts`. أي endpoint جديد ليه تيست صلاحيات وعزل محلات.
-- Claude API من الباك بس، واسم الموديل من `ANTHROPIC_MODEL`.
+- Claude API من الباك بس (`src/ai/`)، واسم الموديل من `ANTHROPIC_MODEL`. التحليل بـ `messages.parse` + `zodOutputFormat` (structured outputs؛ مفيش min/max للأرقام فالثقة بتتقصّ بعد الرد). أي فشل بيرجع حالة (`unavailable`/`failed`/`unclear`…) مش exception، والعرض دايمًا يقدر يكمل يدوي. التيستات بتستخدم `FakeAnalyzer` و`MemoryStorage` (`test/test-app.ts`) ومابتكلمش Claude.
+- **الذكاء الاصطناعي مابيحسبش أسعار**: بيوصف الصورة بس، و`quotes/analysis-mapping.ts` بيختار من كتالوج المحل، والأسعار من محرك التسعير.
+- محرك التسعير (`packages/shared/src/pricing/engine.ts`) هو المصدر الوحيد للأسعار: الويب بيشغّله للمعاينة الفورية، والـ API بيعيد الحساب بيه وقت الحفظ ومابيثقش في أرقام جاية من المتصفح (بيستقبل المستوى والتعديلات والخصم بس).
+- صور العروض في `FileStorage` (Supabase Storage في الإنتاج، `.uploads/` محليًا)، وبتتقري من الـ API بتوكن المستخدم؛ الويب بيعدّيها من `app/api/quotes/[id]/photos`.
 - الكتالوج (`src/catalog/`): `purchase_price` في `materials` بيطلع في `MaterialDto` لصاحب المحل بس؛ الفني بياخد `MaterialPublicDto` من `/materials/options`. أي endpoint جديد بيرجّع خامات لازم يفرّق بالـ role، وليه تيست إن الفني مايشوفش سعر الشراء.
 - القوالب («ابدأ بأسعار نموذجية» و«8 موديلات جاهزة») في `src/catalog/templates.ts`؛ الموديلات بتتضاف لكل محل جديد عند التسجيل.
 - مطابقة الأسماء العربي (موردين/خامات) بـ `arabicKey` من shared (بيوحّد أ/إ/آ وة/ه وى/ي).
@@ -44,6 +47,7 @@ design/          التصميم (مصدر الحقيقة للشكل)
 - الفلاتر والبحث في الـ URL (`useUrlParams`)، والصفحة تفضل Server Component.
 - المكوّنات اللي بتتحط في أعمدة عرضها متغير تستخدم container queries (`@container` و`@min-[46rem]:`) مش breakpoints الشاشة.
 - معادلات الأمتار والبنود الإضافية في `packages/shared/src/pricing` (functions نقية ومتختبرة)؛ الفرونت بيستخدمها للمعاينة والباك للحساب.
+- الصور بتتضغط في المتصفح قبل الرفع (`lib/image/compress.ts`: JPEG، أطول ضلع 1400px) وبتترفع لـ route handler مش Server Action (حد الحجم).
 
 ## التصميم
 

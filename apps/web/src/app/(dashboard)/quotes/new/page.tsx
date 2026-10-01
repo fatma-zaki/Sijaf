@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/layout/coming-soon";
-import { PageHeader } from "@/components/layout/page-header";
+import { NewQuoteForm } from "@/components/features/quotes/new-quote-form";
+import { WizardHeader } from "@/components/features/quotes/wizard-header";
 import { requireQuoter } from "@/lib/auth/session";
 
-export const metadata: Metadata = { title: "إنشاء عرض سعر جديد" };
+export const metadata: Metadata = { title: "عرض سعر جديد" };
 
-export default async function Page() {
+export default async function NewQuotePage() {
   await requireQuoter();
   return (
     <>
-      <PageHeader title="إنشاء عرض سعر جديد" backHref="/" />
-      <ComingSoon phase={4} what="رفع الصورة وتحليلها وحساب التلات مستويات" />
+      <WizardHeader step={0} backHref="/" />
+      <NewQuoteForm />
     </>
   );
 }

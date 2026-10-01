@@ -23,3 +23,7 @@ coverage/
 *.pem
 npm-debug.log*
 .vercel
+
+# صور العروض في التطوير المحلي، وبناء التجربة
+.uploads/
+dist-e2e/

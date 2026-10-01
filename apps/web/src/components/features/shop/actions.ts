@@ -3,6 +3,8 @@
 import {
   createTechnicianSchema,
   onboardingStepSchema,
+  pricingRulesSchema,
+  type PricingRules,
   shopProfileSchema,
   updateTechnicianSchema,
   type ShopDto,
@@ -52,6 +54,12 @@ export async function updateTechnician(input: unknown): Promise<ActionResult<Use
   const result = await runAction(updateInput, input, ({ id, changes }) =>
     apiRequest<UserDto>(`/users/${id}`, { method: "PATCH", body: changes }),
   );
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
+}
+
+export async function updatePricingRules(input: unknown): Promise<ActionResult<PricingRules>> {
+  const result = await runAction(pricingRulesSchema, input, (data) => apiRequest<PricingRules>("/pricing-rules", { method: "PUT", body: data }));
   if (result.ok) revalidatePath("/", "layout");
   return result;
 }

@@ -1,11 +1,11 @@
-import type { UserDto } from "@sijaf/shared";
+import type { PricingRules, UserDto } from "@sijaf/shared";
 import type { Metadata } from "next";
 import { AddTechnicianForm } from "@/components/features/shop/add-technician-form";
+import { PricingRulesForm } from "@/components/features/shop/pricing-rules-form";
 import { ShopProfileForm } from "@/components/features/shop/shop-profile-form";
 import { TeamList } from "@/components/features/shop/team-list";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardTitle } from "@/components/ui/card";
-import { InfoNote } from "@/components/ui/info-note";
 import { apiRequest } from "@/lib/api/server";
 import { requireOwner } from "@/lib/auth/session";
 
@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "إعدادات المحل" };
 
 export default async function SettingsPage() {
   const { shop } = await requireOwner();
-  const users = await apiRequest<UserDto[]>("/users");
+  const [users, rules] = await Promise.all([apiRequest<UserDto[]>("/users"), apiRequest<PricingRules>("/pricing-rules")]);
 
   return (
     <>
@@ -25,10 +25,7 @@ export default async function SettingsPage() {
         </Card>
         <Card className="flex flex-col gap-3">
           <CardTitle>تكاليف وقواعد تانية</CardTitle>
-          <InfoNote>
-            التركيب والكرنيشة وعرض التوب والعربون وصلاحية العرض بتتظبط هنا مع محرك التسعير في المرحلة 4. رفع الشعار جاي
-            مع صفحة العرض والـ PDF في المرحلة 5.
-          </InfoNote>
+          <PricingRulesForm rules={rules} />
         </Card>
         <Card className="flex flex-col gap-2 lg:col-span-2">
           <CardTitle>المستخدمين</CardTitle>

@@ -4,9 +4,13 @@ import type { Request } from 'express';
 
 export const IS_PUBLIC = 'isPublic';
 export const ROLES = 'roles';
+export const QUOTERS = 'quoters';
 
 /** endpoint من غير تسجيل دخول */
 export const Public = () => SetMetadata(IS_PUBLIC, true);
+
+/** endpoint لصاحب المحل والفنيين اللي بيعملوا عروض أسعار */
+export const Quoters = () => SetMetadata(QUOTERS, true);
 
 /** endpoint لأدوار معيّنة بس */
 export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES, roles);
