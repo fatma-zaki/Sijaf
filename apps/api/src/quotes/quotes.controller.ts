@@ -7,9 +7,11 @@ import {
   Inject,
   Param,
   ParseIntPipe,
+  Patch,
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
   Res,
   StreamableFile,
   UploadedFile,
@@ -20,13 +22,19 @@ import {
   createQuoteSchema,
   quoteDetailsSchema,
   quotePricingSchema,
+  quoteListQuerySchema,
+  updateQuoteSchema,
   type AccessTokenClaims,
   type AnalyzeResultDto,
   type CreateQuoteData,
   type PricingContextDto,
   type QuoteDetailsData,
   type QuoteDto,
+  type QuoteEventDto,
+  type QuoteListDto,
+  type QuoteListQueryData,
   type QuotePricingData,
+  type UpdateQuoteData,
 } from '@sijaf/shared';
 import type { Response } from 'express';
 import { CurrentUser, Quoters } from '../common/auth.decorators.js';
@@ -41,6 +49,11 @@ const MAX_PHOTO_BYTES = 6 * 1024 * 1024;
 export class QuotesController {
   constructor(@Inject(QuotesService) private readonly quotes: QuotesService) {}
 
+  @Get()
+  list(@CurrentUser() auth: AccessTokenClaims, @Query(new ZodPipe(quoteListQuerySchema)) query: QuoteListQueryData): Promise<QuoteListDto> {
+    return this.quotes.list(auth.shopId, query);
+  }
+
   @Post()
   create(@CurrentUser() auth: AccessTokenClaims, @Body(new ZodPipe(createQuoteSchema)) body: CreateQuoteData): Promise<QuoteDto> {
     return this.quotes.create(auth.shopId, auth.sub, body);
@@ -49,6 +62,31 @@ export class QuotesController {
   @Get(':id')
   get(@CurrentUser() auth: AccessTokenClaims, @Param('id', new ParseUUIDPipe()) id: string): Promise<QuoteDto> {
     return this.quotes.get(auth.shopId, id);
+  }
+
+  @Patch(':id')
+  update(
+    @CurrentUser() auth: AccessTokenClaims,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodPipe(updateQuoteSchema)) body: UpdateQuoteData,
+  ): Promise<QuoteDto> {
+    return this.quotes.update(auth.shopId, id, auth.sub, body);
+  }
+
+  @Get(':id/events')
+  events(@CurrentUser() auth: AccessTokenClaims, @Param('id', new ParseUUIDPipe()) id: string): Promise<QuoteEventDto[]> {
+    return this.quotes.events(auth.shopId, id);
+  }
+
+  @Post(':id/sent')
+  @HttpCode(200)
+  markSent(@CurrentUser() auth: AccessTokenClaims, @Param('id', new ParseUUIDPipe()) id: string): Promise<QuoteDto> {
+    return this.quotes.markSent(auth.shopId, id, auth.sub);
+  }
+
+  @Post(':id/duplicate')
+  duplicate(@CurrentUser() auth: AccessTokenClaims, @Param('id', new ParseUUIDPipe()) id: string): Promise<QuoteDto> {
+    return this.quotes.duplicate(auth.shopId, id, auth.sub);
   }
 
   @Post(':id/photos')

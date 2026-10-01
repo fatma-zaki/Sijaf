@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  dayToDate,
   daysAgo,
+  formatChange,
+  formatDayMonth,
+  formatDayNumber,
+  formatShortWeekday,
+  formatWeekday,
   formatCurrency,
   formatDaysAgo,
   formatDimensions,
@@ -64,5 +70,21 @@ describe("dates", () => {
   it("formats elapsed days", () => {
     expect(formatDaysAgo(new Date("2026-09-18T09:00:00Z"), now)).toBe("منذ 12 يوم");
     expect(formatDaysAgo(new Date("2026-09-22T09:00:00Z"), now)).toBe("منذ 8 أيام");
+  });
+});
+
+describe("schedule and report formatting", () => {
+  it("formats plain days in Cairo", () => {
+    const day = dayToDate("2026-09-26");
+    expect(formatWeekday(day)).toBe("السبت");
+    expect(formatShortWeekday(day)).toBe("سبت");
+    expect(formatDayNumber(day)).toBe("26");
+    expect(formatDayMonth(dayToDate("2026-10-01"))).toBe("1 أكتوبر");
+  });
+
+  it("shows the change from the previous period", () => {
+    expect(formatChange(24, 20)).toBe("+20%");
+    expect(formatChange(8, 10)).toBe("-20%");
+    expect(formatChange(5, 0)).toBeNull();
   });
 });

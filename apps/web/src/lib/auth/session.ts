@@ -1,9 +1,11 @@
 import "server-only";
 import type { MeDto } from "@sijaf/shared";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { apiRequest } from "../api/server";
 import { ApiError } from "../api/errors";
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "./cookies";
 
 /** المستخدم والمحل للطلب الحالي (مرة واحدة لكل request) */
 export const getSession = cache(async (): Promise<MeDto> => {
@@ -28,4 +30,10 @@ export async function requireQuoter(): Promise<MeDto> {
   const session = await getSession();
   if (!session.user.canQuote) redirect("/");
   return session;
+}
+
+/** حد من المحل (مش العميل): فتحه لرابط العرض أو تحميله الـ PDF مايتسجلش في السجل */
+export async function hasStaffSession(): Promise<boolean> {
+  const jar = await cookies();
+  return jar.has(ACCESS_COOKIE) || jar.has(REFRESH_COOKIE);
 }

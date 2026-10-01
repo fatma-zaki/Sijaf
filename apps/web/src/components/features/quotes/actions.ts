@@ -4,6 +4,7 @@ import {
   createQuoteSchema,
   quoteDetailsSchema,
   quotePricingSchema,
+  updateQuoteSchema,
   type AnalyzeResultDto,
   type QuoteDto,
 } from "@sijaf/shared";
@@ -38,5 +39,25 @@ export async function saveQuotePricing(id: string, input: unknown): Promise<Acti
     apiRequest<QuoteDto>(`/quotes/${target}/pricing`, { method: "PUT", body: data }),
   );
   if (result.ok) revalidatePath(`/quotes/${target}`, "layout");
+  return result;
+}
+
+export async function updateQuote(id: string, input: unknown): Promise<ActionResult<QuoteDto>> {
+  const target = quoteId.parse(id);
+  const result = await runAction(updateQuoteSchema, input, (data) => apiRequest<QuoteDto>(`/quotes/${target}`, { method: "PATCH", body: data }));
+  if (result.ok) revalidatePath("/quotes", "layout");
+  return result;
+}
+
+/** بيتنده لما زرار واتساب يتداس (الرسالة نفسها بتتبعت من موبايل المستخدم) */
+export async function markQuoteSent(id: string): Promise<ActionResult<QuoteDto>> {
+  const result = await runAction(quoteId, id, (target) => apiRequest<QuoteDto>(`/quotes/${target}/sent`, { method: "POST" }));
+  if (result.ok) revalidatePath("/quotes", "layout");
+  return result;
+}
+
+export async function duplicateQuote(id: string): Promise<ActionResult<QuoteDto>> {
+  const result = await runAction(quoteId, id, (target) => apiRequest<QuoteDto>(`/quotes/${target}/duplicate`, { method: "POST" }));
+  if (result.ok) revalidatePath("/quotes");
   return result;
 }

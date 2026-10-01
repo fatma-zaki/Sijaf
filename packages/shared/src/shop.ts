@@ -29,7 +29,8 @@ export type ShopDto = {
   slug: string;
   whatsapp: string | null;
   address: string;
-  logoUrl: string | null;
+  /** بيتغير مع كل لوجو جديد (للكاش)؛ null لو مفيش */
+  logoVersion: string | null;
   completedSteps: OnboardingStep[];
   onboardingDismissed: boolean;
 };

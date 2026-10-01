@@ -11,6 +11,8 @@ import {
   operations,
   paymentMethods,
   pricingMethods,
+  appointmentTypes,
+  quoteEventTypes,
   quoteStatuses,
   stockStatuses,
   tiers,
@@ -266,17 +268,7 @@ export const componentSlot = pgEnum('component_slot', componentSlots);
 export const componentSource = pgEnum('component_source', componentSources);
 export const lineKind = pgEnum('line_kind', ['fabric', 'labor', 'track', 'cornice', 'installation', 'model_item', 'manual']);
 export const lineSource = pgEnum('line_source', ['system', 'manual']);
-export const quoteEventType = pgEnum('quote_event_type', [
-  'created',
-  'photo_added',
-  'analyzed',
-  'component_changed',
-  'priced',
-  'status_changed',
-  'sent_whatsapp',
-  'link_opened',
-  'pdf_downloaded',
-]);
+export const quoteEventType = pgEnum('quote_event_type', quoteEventTypes);
 
 export const quotes = pgTable(
   'quotes',
@@ -395,6 +387,31 @@ export const quoteEvents = pgTable(
   (table) => [index('quote_events_quote_idx').on(table.quoteId)],
 ).enableRLS();
 
+// ---------- المواعيد ----------
+
+export const appointmentType = pgEnum('appointment_type', appointmentTypes);
+
+export const appointments = pgTable(
+  'appointments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: shopId(),
+    type: appointmentType('type').notNull(),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    /** اسم العميل أو المورد زي ما اتكتب */
+    title: text('title').notNull(),
+    clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }),
+    quoteId: uuid('quote_id').references(() => quotes.id, { onDelete: 'set null' }),
+    technicianId: uuid('technician_id').references(() => users.id, { onDelete: 'set null' }),
+    address: text('address').notNull().default(''),
+    notes: text('notes').notNull().default(''),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (table) => [index('appointments_shop_starts_idx').on(table.shopId, table.startsAt)],
+).enableRLS();
+
+export type AppointmentRow = typeof appointments.$inferSelect;
 export type PricingRulesRow = typeof pricingRules.$inferSelect;
 export type ClientRow = typeof clients.$inferSelect;
 export type QuoteRow = typeof quotes.$inferSelect;

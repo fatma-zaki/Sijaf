@@ -45,3 +45,6 @@ export const mobileSchema = z
     }
     return normalized;
   });
+
+/** موبايل اختياري: الخانة الفاضية بتبقى null */
+export const optionalMobileSchema = z.union([mobileSchema, z.literal("").transform(() => null), z.null()]).default(null);

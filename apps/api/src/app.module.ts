@@ -5,6 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AiModule } from './ai/ai.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CatalogModule } from './catalog/catalog.module.js';
+import { ClientsModule } from './clients/clients.module.js';
 import { AuthGuard } from './common/auth.guard.js';
 import { ClientIpThrottlerGuard } from './common/client-ip-throttler.guard.js';
 import { ConfigModule } from './config/config.module.js';
@@ -13,6 +14,8 @@ import { DbModule } from './db/db.module.js';
 import { HealthController } from './health.controller.js';
 import { PricingModule } from './pricing/pricing.module.js';
 import { QuotesModule } from './quotes/quotes.module.js';
+import { ReportsModule } from './reports/reports.module.js';
+import { ScheduleModule } from './schedule/schedule.module.js';
 import { ShopsModule } from './shops/shops.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { UsersModule } from './users/users.module.js';
@@ -41,6 +44,9 @@ import { UsersModule } from './users/users.module.js';
     CatalogModule,
     PricingModule,
     QuotesModule,
+    ClientsModule,
+    ScheduleModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
   providers: [

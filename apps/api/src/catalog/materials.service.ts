@@ -14,6 +14,7 @@ import {
 import { and, asc, count, desc, eq, ilike, inArray, isNull, or, type SQL } from 'drizzle-orm';
 import type { z } from 'zod';
 import { ShopsService } from '../shops/shops.service.js';
+import { escapeLike } from '../common/like.js';
 import { DB, type Db } from '../db/db.module.js';
 import { materials, modelItems, suppliers, type MaterialRow } from '../db/schema.js';
 import { nameKey } from './normalize.js';
@@ -46,10 +47,6 @@ export function toOwnerMaterial({ material, supplierName }: MaterialWithSupplier
     supplierCode: material.supplierCode,
     purchasePrice: material.purchasePrice,
   };
-}
-
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
 @Injectable()

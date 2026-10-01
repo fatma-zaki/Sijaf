@@ -2,37 +2,22 @@
 
 import { layerLabels, materialLayers, tierLabels, tiers, type MaterialLayer, type MaterialListDto, type Tier } from "@sijaf/shared";
 import { FileSpreadsheet, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FilterChips } from "@/components/ui/filter-chips";
-import { SearchField } from "@/components/ui/search-field";
+import { UrlSearchField } from "@/components/ui/url-search-field";
 import { useUrlParams } from "@/lib/use-url-params";
 import { ExcelImportDialog } from "./excel/excel-import-dialog";
 import { MaterialDialog, type SupplierOption } from "./material-dialog";
 
-const SEARCH_DELAY_MS = 300;
-
 /** البحث وأزرار الإضافة والاستيراد */
 export function MaterialsToolbar({ suppliers }: { suppliers: SupplierOption[] }) {
-  const { params, update } = useUrlParams();
-  const [query, setQuery] = useState(params.get("q") ?? "");
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
 
-  useEffect(() => {
-    if (query === (params.get("q") ?? "")) return;
-    const timer = setTimeout(() => update({ q: query }), SEARCH_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [query, params, update]);
-
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <SearchField
-        placeholder="ابحث باسم الخامة أو المورد..."
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        className="md:w-80"
-      />
+      <UrlSearchField placeholder="ابحث باسم الخامة أو المورد..." className="md:w-80" />
       <div className="flex gap-2">
         <Button variant="secondary" onClick={() => setImporting(true)} className="flex-1 md:flex-none">
           استيراد من Excel

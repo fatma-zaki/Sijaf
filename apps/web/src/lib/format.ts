@@ -97,3 +97,44 @@ export function formatDaysAgo(date: Date, now: Date = new Date()): string {
   if (diff === 1) return "امبارح";
   return `منذ ${diff} ${diff <= 10 ? "أيام" : "يوم"}`;
 }
+
+/** يوم «YYYY-MM-DD» كـ Date (نص اليوم UTC بيفضل نفس اليوم بتوقيت القاهرة) */
+export function dayToDate(day: string): Date {
+  return new Date(`${day}T12:00:00Z`);
+}
+
+const shortWeekdayFormat = dateFormat({ weekday: "short" });
+const dayNumberFormat = dateFormat({ day: "numeric" });
+const monthFormat = dateFormat({ month: "long" });
+
+/** «السبت» */
+export function formatWeekday(date: Date): string {
+  return weekdayFormat.format(date);
+}
+
+/** «سبت» للتابات الضيقة */
+export function formatShortWeekday(date: Date): string {
+  return shortWeekdayFormat.format(date).replace(/^ال/, "");
+}
+
+/** «26» */
+export function formatDayNumber(date: Date): string {
+  return dayNumberFormat.format(date);
+}
+
+/** «26 سبتمبر» */
+export function formatDayMonth(date: Date): string {
+  return dayMonthFormat.format(date);
+}
+
+/** «سبتمبر» */
+export function formatMonthName(date: Date): string {
+  return monthFormat.format(date);
+}
+
+/** نسبة التغيير عن الفترة اللي فاتت: «+18%» / «-5%»، وnull لو مفيش أساس للمقارنة */
+export function formatChange(current: number, previous: number): string | null {
+  if (previous <= 0) return null;
+  const change = Math.round(((current - previous) / previous) * 100);
+  return `${change >= 0 ? "+" : ""}${change}%`;
+}

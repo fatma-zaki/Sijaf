@@ -7,8 +7,12 @@ export type DataTableColumn<Row> = {
   cell: (row: Row) => ReactNode;
   /** رقم أو سعر: غامق ومايتكسرش على سطرين */
   numeric?: boolean;
+  /** عمود بيظهر على اللابتوب بس (التابلت بيشوف أعمدة أقل) */
+  visibleFrom?: "lg";
   className?: string;
 };
+
+const visibility = { lg: "hidden lg:table-cell" } as const;
 
 type DataTableProps<Row> = {
   columns: readonly DataTableColumn<Row>[];
@@ -28,7 +32,10 @@ export function DataTable<Row>({ columns, rows, getRowKey, label, className }: D
               <th
                 key={column.id}
                 scope="col"
-                className="whitespace-nowrap border-b border-border bg-surface-subtle px-4 py-2.5 text-start text-xs font-medium text-ink-muted"
+                className={cn(
+                  "whitespace-nowrap border-b border-border bg-surface-subtle px-4 py-2.5 text-start text-xs font-medium text-ink-muted",
+                  column.visibleFrom && visibility[column.visibleFrom],
+                )}
               >
                 {column.header}
               </th>
@@ -44,6 +51,7 @@ export function DataTable<Row>({ columns, rows, getRowKey, label, className }: D
                   className={cn(
                     "border-b border-border px-4 py-3 text-ink-2 group-last:border-b-0",
                     column.numeric && "whitespace-nowrap font-semibold text-ink",
+                    column.visibleFrom && visibility[column.visibleFrom],
                     column.className,
                   )}
                 >

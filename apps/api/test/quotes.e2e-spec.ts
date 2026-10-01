@@ -4,30 +4,16 @@ import type {
   CurtainModelDto,
   MaterialDto,
   PricingContextDto,
+  PublicQuoteDto,
   QuoteDto,
+  QuoteEventDto,
+  QuoteListDto,
+  ShopDto,
 } from '@sijaf/shared';
 import { and, eq } from 'drizzle-orm';
-import type { CurtainAnalysis } from '../src/ai/analysis.schema.js';
 import { quoteEvents, quoteItems } from '../src/db/schema.js';
+import { JPEG, designAnalysis } from './quote-helpers.js';
 import { addTechnician, bearer, createTestApp, nextPhone, registerShop, type TestApp } from './test-app.js';
-
-// أصغر JPEG صالح (SOI + APP0 + EOI) يكفي للتحقق من النوع
-const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0xff, 0xd9]);
-
-const designAnalysis: CurtainAnalysis = {
-  is_curtain: true,
-  image_quality: 'clear',
-  style: 'wave',
-  fabric_look: 'velvet',
-  has_sheer: true,
-  has_main: true,
-  lining_likely: true,
-  track: 'double',
-  valance: false,
-  color: 'بيج',
-  confidence: { style: 90, fabric_look: 88, sheer: 92, main: 95, lining: 85, track: 78, valance: 64 },
-  notes: 'الستارة قريبة من الأرض',
-};
 
 describe('quotes (e2e)', () => {
   let t: TestApp;
@@ -307,6 +293,183 @@ describe('quotes (e2e)', () => {
       const twoWindows = (await t.http().put(`/quotes/${quote.id}/details`).set(bearer(owner)).send(details(quote, { windowCount: 2 })).expect(200))
         .body as QuoteDto;
       expect(twoWindows.subtotal).toBe(11555 * 2);
+    });
+  });
+
+  describe('list, status and sharing', () => {
+    const NO_EDITS = { overrides: {}, removed: [], manual: [] };
+
+    /** عرض متسعّر بالمستوى المتوسط */
+    async function pricedQuote(owner: AuthTokens, name = 'أحمد محمد', phone = nextPhone()): Promise<QuoteDto> {
+      const created = (
+        await t.http().post('/quotes').set(bearer(owner)).send({ clientName: name, clientPhone: phone, roomLabel: 'صالون' }).expect(201)
+      ).body as QuoteDto;
+      await upload(owner, created.id).expect(201);
+      t.analyzer.next = { status: 'ok', result: designAnalysis };
+      const { quote } = (await t.http().post(`/quotes/${created.id}/analyze`).set(bearer(owner)).expect(200)).body as AnalyzeResultDto;
+      await t
+        .http()
+        .put(`/quotes/${quote.id}/details`)
+        .set(bearer(owner))
+        .send({
+          modelId: quote.modelId,
+          widthCm: 300,
+          heightCm: 260,
+          roomLabel: 'صالون',
+          components: quote.components.map(({ slot, materialId: id, included }) => ({ slot, materialId: id, included })),
+        })
+        .expect(200);
+      return (await t.http().put(`/quotes/${quote.id}/pricing`).set(bearer(owner)).send({ tier: 'standard', edits: NO_EDITS }).expect(200))
+        .body as QuoteDto;
+    }
+
+    const list = async (owner: AuthTokens, query = '') => (await t.http().get(`/quotes${query}`).set(bearer(owner)).expect(200)).body as QuoteListDto;
+    const events = async (owner: AuthTokens, id: string) =>
+      (await t.http().get(`/quotes/${id}/events`).set(bearer(owner)).expect(200)).body as QuoteEventDto[];
+
+    it('lists the newest first with search, status filter, counts and pages', async () => {
+      const owner = await shopWithCatalog();
+      const ahmed = await pricedQuote(owner, 'أحمد محمد', '01001234567');
+      const sara = (await t.http().post('/quotes').set(bearer(owner)).send({ clientName: 'سارة علي', clientPhone: '01125550198' }).expect(201)).body as QuoteDto;
+      await t.http().patch(`/quotes/${ahmed.id}`).set(bearer(owner)).send({ status: 'accepted' }).expect(200);
+
+      const all = await list(owner);
+      expect(all.items.map((q) => q.number)).toEqual([sara.number, ahmed.number]);
+      expect(all.counts).toMatchObject({ all: 2, draft: 1, accepted: 1, review: 0 });
+      expect(all.items[1]).toMatchObject({ clientName: 'أحمد محمد', clientPhone: '01001234567', roomLabel: 'صالون', tier: 'standard', status: 'accepted' });
+      expect(all.items[1].total).toBe(ahmed.total);
+
+      expect((await list(owner, '?status=accepted')).items.map((q) => q.id)).toEqual([ahmed.id]);
+      expect((await list(owner, `?q=${encodeURIComponent('#' + sara.number)}`)).items.map((q) => q.id)).toEqual([sara.id]);
+      expect((await list(owner, '?q=0112555')).items.map((q) => q.id)).toEqual([sara.id]);
+      expect((await list(owner, `?q=${encodeURIComponent('أحمد')}`)).items.map((q) => q.id)).toEqual([ahmed.id]);
+      // البحث بيغيّر العدد، وفلتر الحالة لأ
+      expect((await list(owner, `?q=${encodeURIComponent('أحمد')}&status=draft`)).counts).toMatchObject({ all: 1, accepted: 1, draft: 0 });
+
+      const page2 = await list(owner, '?pageSize=1&page=2');
+      expect(page2).toMatchObject({ total: 2, page: 2, pageSize: 1 });
+      expect(page2.items.map((q) => q.id)).toEqual([ahmed.id]);
+      await t.http().get('/quotes?status=lost').set(bearer(owner)).expect(400);
+
+      expect((await list(await shopWithCatalog())).total).toBe(0);
+    });
+
+    it('changes status and notes, and logs status changes with who did them', async () => {
+      const owner = await shopWithCatalog();
+      const draft = await createQuote(owner);
+      const res = await t.http().patch(`/quotes/${draft.id}`).set(bearer(owner)).send({ status: 'sent' }).expect(400);
+      expect(res.body.message).toBe('سعّر العرض الأول قبل ما تغيّر حالته');
+      // الملاحظات تتحفظ حتى قبل التسعير
+      const noted = (await t.http().patch(`/quotes/${draft.id}`).set(bearer(owner)).send({ internalNotes: ' التركيب بعد 15 أكتوبر ' }).expect(200)).body as QuoteDto;
+      expect(noted.internalNotes).toBe('التركيب بعد 15 أكتوبر');
+      await t.http().patch(`/quotes/${draft.id}`).set(bearer(owner)).send({}).expect(400);
+
+      const quote = await pricedQuote(owner);
+      expect(quote.status).toBe('review');
+      const accepted = (await t.http().patch(`/quotes/${quote.id}`).set(bearer(owner)).send({ status: 'accepted' }).expect(200)).body as QuoteDto;
+      expect(accepted.status).toBe('accepted');
+
+      const log = await events(owner, quote.id);
+      expect(log[0]).toMatchObject({ type: 'status_changed', payload: { from: 'review', to: 'accepted' } });
+      expect(log[0].actorName).toBeTruthy();
+      expect(log.at(-1)?.type).toBe('created');
+      expect(log.map((e) => e.type)).toContain('priced');
+    });
+
+    it('marks a quote as sent on WhatsApp without undoing a later status', async () => {
+      const owner = await shopWithCatalog();
+      const draft = await createQuote(owner);
+      await t.http().post(`/quotes/${draft.id}/sent`).set(bearer(owner)).expect(400);
+
+      const quote = await pricedQuote(owner);
+      const sent = (await t.http().post(`/quotes/${quote.id}/sent`).set(bearer(owner)).expect(200)).body as QuoteDto;
+      expect(sent.status).toBe('sent');
+      await t.http().patch(`/quotes/${quote.id}`).set(bearer(owner)).send({ status: 'accepted' }).expect(200);
+      const again = (await t.http().post(`/quotes/${quote.id}/sent`).set(bearer(owner)).expect(200)).body as QuoteDto;
+      expect(again.status).toBe('accepted');
+      expect((await events(owner, quote.id)).filter((e) => e.type === 'sent_whatsapp')).toHaveLength(2);
+    });
+
+    it('duplicates a quote with a new number and the same pricing', async () => {
+      const owner = await shopWithCatalog();
+      const quote = await pricedQuote(owner);
+      await t.http().patch(`/quotes/${quote.id}`).set(bearer(owner)).send({ status: 'accepted', internalNotes: 'سري' }).expect(200);
+
+      const copy = (await t.http().post(`/quotes/${quote.id}/duplicate`).set(bearer(owner)).expect(201)).body as QuoteDto;
+      expect(copy.id).not.toBe(quote.id);
+      expect(copy.number).toBe(quote.number + 1);
+      expect(copy.publicToken).not.toBe(quote.publicToken);
+      expect(copy).toMatchObject({ status: 'review', tier: 'standard', total: quote.total, photoCount: 1, internalNotes: '', client: quote.client });
+      expect(copy.components).toEqual(quote.components);
+      expect((await events(owner, copy.id)).at(-1)).toMatchObject({ type: 'created', payload: { duplicatedFrom: quote.number } });
+    });
+
+    it('shares a priced quote publicly without private data', async () => {
+      const owner = await shopWithCatalog();
+      const draft = await createQuote(owner);
+      await t.http().get(`/public/quotes/${draft.publicToken}`).expect(404);
+      await t.http().get('/public/quotes/not-a-token').expect(404);
+
+      const quote = await pricedQuote(owner);
+      await t.http().patch(`/quotes/${quote.id}`).set(bearer(owner)).send({ internalNotes: 'العميل بيفاصل' }).expect(200);
+      const res = await t.http().get(`/public/quotes/${quote.publicToken}`).expect(200);
+      const shared = res.body as PublicQuoteDto;
+      expect(shared).toMatchObject({ number: quote.number, total: quote.total, client: { name: 'أحمد محمد' }, hasPhoto: true, tier: 'standard' });
+      expect(shared.shop).toMatchObject({ hasLogo: false });
+      expect(shared.items).toHaveLength(quote.items.length);
+      const raw = JSON.stringify(res.body);
+      for (const secret of [quote.client.phone, quote.publicToken, quote.id, 'العميل بيفاصل', 'unitCost', 'purchasePrice', 'unitPrice']) {
+        expect(raw).not.toContain(secret);
+      }
+
+      const photo = await t.http().get(`/public/quotes/${quote.publicToken}/photo`).expect(200);
+      expect(photo.headers['content-type']).toBe('image/jpeg');
+      await t.http().get(`/public/quotes/${quote.publicToken}/logo`).expect(404);
+    });
+
+    it('logs link opens at most once per half hour, and PDF downloads', async () => {
+      const owner = await shopWithCatalog();
+      const quote = await pricedQuote(owner);
+      await t.http().post(`/public/quotes/${quote.publicToken}/opened`).expect(204);
+      await t.http().post(`/public/quotes/${quote.publicToken}/opened`).expect(204);
+      await t.http().post(`/public/quotes/${quote.publicToken}/pdf-downloaded`).expect(204);
+      await t.http().post('/public/quotes/nope/opened').expect(404);
+
+      const log = await events(owner, quote.id);
+      expect(log.filter((e) => e.type === 'link_opened')).toHaveLength(1);
+      expect(log[0]).toMatchObject({ type: 'pdf_downloaded', actorName: null });
+    });
+
+    it('lets the owner upload a logo that shows on the shared quote', async () => {
+      const owner = await shopWithCatalog();
+      const quote = await pricedQuote(owner);
+      const technician = await addTechnician(t, owner, true);
+      const attach = (who: AuthTokens) => t.http().post('/shop/logo').set(bearer(who)).attach('logo', JPEG, { filename: 'logo.jpg', contentType: 'image/jpeg' });
+
+      await attach(technician).expect(403);
+      await t.http().post('/shop/logo').set(bearer(owner)).attach('logo', Buffer.from('not an image'), { filename: 'x.jpg' }).expect(400);
+      const shop = (await attach(owner).expect(200)).body as ShopDto;
+      expect(shop.logoVersion).toMatch(/^[0-9a-f-]{36}$/);
+
+      expect(((await t.http().get(`/public/quotes/${quote.publicToken}`).expect(200)).body as PublicQuoteDto).shop.hasLogo).toBe(true);
+      await t.http().get(`/public/quotes/${quote.publicToken}/logo`).expect(200);
+      await t.http().get('/shop/logo').set(bearer(technician)).expect(200);
+
+      const removed = (await t.http().delete('/shop/logo').set(bearer(owner)).expect(200)).body as ShopDto;
+      expect(removed.logoVersion).toBeNull();
+      await t.http().get(`/public/quotes/${quote.publicToken}/logo`).expect(404);
+    });
+
+    it('keeps other shops out of the list, status and events', async () => {
+      const owner = await shopWithCatalog();
+      const quote = await pricedQuote(owner);
+      const other = await registerShop(t);
+      await t.http().patch(`/quotes/${quote.id}`).set(bearer(other)).send({ status: 'accepted' }).expect(404);
+      await t.http().get(`/quotes/${quote.id}/events`).set(bearer(other)).expect(404);
+      await t.http().post(`/quotes/${quote.id}/duplicate`).set(bearer(other)).expect(404);
+      await t.http().post(`/quotes/${quote.id}/sent`).set(bearer(other)).expect(404);
+      const installer = await addTechnician(t, owner, false);
+      await t.http().get('/quotes').set(bearer(installer)).expect(403);
     });
   });
 

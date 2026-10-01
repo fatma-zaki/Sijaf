@@ -23,3 +23,6 @@ export const updateTechnicianSchema = z
   })
   .partial();
 export type UpdateTechnicianInput = z.input<typeof updateTechnicianSchema>;
+
+/** الفريق زي ما أي حد في المحل يشوفه (المواعيد): من غير موبايلات ولا صلاحيات */
+export type TeamMemberDto = { id: string; fullName: string; jobTitle: string; isOwner: boolean };

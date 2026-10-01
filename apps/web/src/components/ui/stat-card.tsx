@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { TrendingUp } from "lucide-react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 type StatCardProps = {
@@ -12,6 +12,8 @@ type StatCardProps = {
 };
 
 export function StatCard({ value, label, delta, icon, className }: StatCardProps) {
+  const down = delta?.startsWith("-");
+  const Trend = down ? TrendingDown : TrendingUp;
   return (
     <div
       className={cn(
@@ -23,8 +25,8 @@ export function StatCard({ value, label, delta, icon, className }: StatCardProps
         <div className="text-3xl font-bold text-ink">{value}</div>
         <div className="text-sm text-ink-muted">{label}</div>
         {delta && (
-          <div dir="ltr" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-growth">
-            <TrendingUp aria-hidden className="size-3.5" />
+          <div dir="ltr" className={cn("mt-2 inline-flex items-center gap-1 text-xs font-semibold", down ? "text-ink-muted" : "text-growth")}>
+            <Trend aria-hidden className="size-3.5" />
             {delta}
           </div>
         )}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { componentSource, curtainTitle, groupQuoteLines, windowsText } from "./quote-format";
+import { componentSource, curtainTitle, groupQuoteLines, isQuoteExpired, quotesCountText, windowsText } from "./quote-format";
 
 describe("groupQuoteLines", () => {
   it("groups like the design's final quote", () => {
@@ -43,5 +43,21 @@ describe("componentSource", () => {
       text: "عدّلتها · كانت: ساتان تركي",
     });
     expect(componentSource({ source: "manual", confidence: null, aiMaterialId: null, materialId: "velvet" }, names).text).toBe("اختيار يدوي");
+  });
+});
+
+describe("isQuoteExpired", () => {
+  it("is valid through the last day in Cairo", () => {
+    // 11:30 م يوم 7 أكتوبر بتوقيت القاهرة
+    expect(isQuoteExpired("2026-10-07", new Date("2026-10-07T20:30:00Z"))).toBe(false);
+    // 12:30 ص يوم 8 أكتوبر بتوقيت القاهرة
+    expect(isQuoteExpired("2026-10-07", new Date("2026-10-07T21:30:00Z"))).toBe(true);
+    expect(isQuoteExpired(null)).toBe(false);
+  });
+});
+
+describe("quotesCountText", () => {
+  it("uses Egyptian counting", () => {
+    expect([0, 1, 2, 3, 11].map(quotesCountText)).toEqual(["مفيش عروض", "عرض واحد", "عرضين", "3 عروض", "11 عرض"]);
   });
 });

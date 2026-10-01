@@ -2,6 +2,7 @@ import type { PricingRules, UserDto } from "@sijaf/shared";
 import type { Metadata } from "next";
 import { AddTechnicianForm } from "@/components/features/shop/add-technician-form";
 import { PricingRulesForm } from "@/components/features/shop/pricing-rules-form";
+import { ShopLogoField } from "@/components/features/shop/shop-logo-field";
 import { ShopProfileForm } from "@/components/features/shop/shop-profile-form";
 import { TeamList } from "@/components/features/shop/team-list";
 import { PageHeader } from "@/components/layout/page-header";
@@ -21,6 +22,7 @@ export default async function SettingsPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
         <Card className="flex flex-col gap-4">
           <CardTitle>بيانات المحل</CardTitle>
+          <ShopLogoField shopName={shop.name} logoVersion={shop.logoVersion} />
           <ShopProfileForm shop={shop} submitLabel="حفظ التغييرات" />
         </Card>
         <Card className="flex flex-col gap-3">

@@ -14,6 +14,11 @@ export function toUserDto(row: UserRow): UserDto {
   };
 }
 
+/** «shopId/logo-<uuid>.png» ← «<uuid>» */
+function logoVersion(logoPath: string | null): string | null {
+  return logoPath?.match(/logo-([\w-]+)\.\w+$/)?.[1] ?? null;
+}
+
 export function toShopDto(row: ShopRow): ShopDto {
   return {
     id: row.id,
@@ -21,7 +26,7 @@ export function toShopDto(row: ShopRow): ShopDto {
     slug: row.slug,
     whatsapp: row.whatsapp,
     address: row.address,
-    logoUrl: null,
+    logoVersion: logoVersion(row.logoPath),
     completedSteps: row.completedSteps.filter((step): step is OnboardingStep =>
       (onboardingSteps as readonly string[]).includes(step),
     ),

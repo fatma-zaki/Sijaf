@@ -1,5 +1,6 @@
 import { LOW_CONFIDENCE } from "@/components/ui/confidence";
 import type { QuoteComponentDto, QuoteItemDto } from "@sijaf/shared";
+import { daysAgo } from "@/lib/format";
 
 export const quoteSteps = ["رفع الصورة", "التفاصيل", "التسعير", "العرض النهائي"] as const;
 
@@ -25,10 +26,15 @@ export function groupQuoteLines(items: readonly Pick<QuoteItemDto, "kind" | "lab
   return [...groups].map(([label, total]) => ({ label, total }));
 }
 
+/** «ويفي (موجة)» ← «ويفي» */
+export function shortModelName(modelName: string): string {
+  return modelName.replace(/\s*\(.*\)$/, "");
+}
+
 /** «ستارة غرفة نوم — ويفي» */
 export function curtainTitle(roomLabel: string, modelName: string | null): string {
   const base = roomLabel ? `ستارة ${roomLabel}` : "ستارة";
-  return modelName ? `${base} — ${modelName.replace(/\s*\(.*\)$/, "")}` : base;
+  return modelName ? `${base} — ${shortModelName(modelName)}` : base;
 }
 
 /** «شباك واحد» / «شباكين» / «3 شبابيك» */
@@ -36,6 +42,14 @@ export function windowsText(count: number): string {
   if (count === 1) return "شباك واحد";
   if (count === 2) return "شباكين";
   return `${count} ${count <= 10 ? "شبابيك" : "شباك"}`;
+}
+
+/** «3 عروض» / «عرضين» / «عرض واحد» */
+export function quotesCountText(count: number): string {
+  if (count === 0) return "مفيش عروض";
+  if (count === 1) return "عرض واحد";
+  if (count === 2) return "عرضين";
+  return `${count} ${count <= 10 ? "عروض" : "عرض"}`;
 }
 
 export type SourceTone = "ai" | "edited" | "low" | "manual";
@@ -54,4 +68,11 @@ export function componentSource(
     return { tone: "edited", text: `عدّلتها · كانت: ${materialName(component.aiMaterialId) ?? "اقتراح تاني"}` };
   }
   return { tone: "manual", text: component.aiMaterialId ? "عدّلتها" : "اختيار يدوي" };
+}
+
+/** العرض خلصت صلاحيته لو آخر يوم فيه عدّى (بتوقيت القاهرة) */
+export function isQuoteExpired(validUntil: string | null, now: Date = new Date()): boolean {
+  if (!validUntil) return false;
+  // نص اليوم UTC بيقع في نفس اليوم بتوقيت القاهرة
+  return daysAgo(new Date(`${validUntil}T12:00:00Z`), now) > 0;
 }

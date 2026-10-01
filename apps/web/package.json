@@ -14,9 +14,11 @@
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
     "@sijaf/shared": "*",
+    "@sparticuz/chromium": "^153.0.0",
     "clsx": "^2.1.1",
     "lucide-react": "^1.49.0",
     "next": "16.3.8",
+    "puppeteer-core": "^25.12.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.89.0",

@@ -1,20 +1,27 @@
-import { formatEgyptianMobile, tierLabels, type QuoteDto, type ShopDto } from "@sijaf/shared";
+import { formatEgyptianMobile, tierLabels, type PublicQuoteDto } from "@sijaf/shared";
 import { ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { formatCurrency, formatDimensions, formatLongDate, formatShortDate } from "@/lib/format";
 import { curtainTitle, groupQuoteLines, windowsText } from "./quote-format";
 
+/** اللي العرض محتاجه: QuoteDto جوه التطبيق، وPublicQuoteDto في صفحة العميل */
+export type QuoteDocumentData = Pick<
+  PublicQuoteDto,
+  "number" | "client" | "roomLabel" | "widthCm" | "heightCm" | "windowCount" | "modelName" | "tier" | "items" | "discount" | "total" | "depositAmount" | "validUntil" | "createdAt"
+>;
+
 type QuoteDocumentProps = {
-  quote: QuoteDto;
-  shop: Pick<ShopDto, "name" | "whatsapp" | "logoUrl">;
-  /** الصورة: من الـ API جوه التطبيق، أو رابط عام في صفحة العميل */
+  quote: QuoteDocumentData;
+  shop: { name: string; whatsapp: string | null };
+  /** الصور: من الـ API بتوكن المستخدم جوه التطبيق، أو الروابط العامة في صفحة العميل */
   photoSrc: string | null;
+  logoSrc: string | null;
   className?: string;
 };
 
-/** عرض السعر زي ما العميل بيشوفه (العرض النهائي، وصفحة العميل والـ PDF في المرحلة 5) */
-export function QuoteDocument({ quote, shop, photoSrc, className }: QuoteDocumentProps) {
+/** عرض السعر زي ما العميل بيشوفه: العرض النهائي، وصفحة العميل، والـ PDF */
+export function QuoteDocument({ quote, shop, photoSrc, logoSrc, className }: QuoteDocumentProps) {
   const size =
     quote.widthCm && quote.heightCm
       ? `${formatDimensions(quote.widthCm, quote.heightCm)}${quote.windowCount > 1 ? ` · ${windowsText(quote.windowCount)}` : ""}`
@@ -31,8 +38,8 @@ export function QuoteDocument({ quote, shop, photoSrc, className }: QuoteDocumen
     <article aria-label="معاينة عرض السعر" className={cn("@container flex w-full max-w-160 flex-col gap-4.5 rounded-md bg-surface px-5 py-6 shadow-raised md:px-8 md:py-7", className)}>
       <header className="flex items-center justify-between gap-3 border-b border-border pb-4">
         <div className="flex items-center gap-3">
-          {shop.logoUrl ? (
-            <Image src={shop.logoUrl} alt={`شعار ${shop.name}`} width={44} height={44} unoptimized className="size-11 rounded-md object-contain" />
+          {logoSrc ? (
+            <Image src={logoSrc} alt={`شعار ${shop.name}`} width={44} height={44} unoptimized loading="eager" className="size-11 rounded-md object-contain" />
           ) : (
             <span aria-hidden className="grid size-11 place-items-center rounded-md border border-dashed border-border-strong bg-surface-subtle text-sm font-bold text-ink-muted">
               {shop.name.slice(0, 2)}
@@ -64,7 +71,7 @@ export function QuoteDocument({ quote, shop, photoSrc, className }: QuoteDocumen
         </dl>
         <div className="relative h-37.5 w-full flex-none overflow-hidden rounded-md border border-border bg-surface-subtle @min-[30rem]:w-50">
           {photoSrc ? (
-            <Image src={photoSrc} alt="صورة الستارة" fill unoptimized className="object-cover" sizes="200px" />
+            <Image src={photoSrc} alt="صورة الستارة" fill unoptimized loading="eager" className="object-cover" sizes="200px" />
           ) : (
             <span className="grid h-full place-items-center text-ink-muted">
               <ImageIcon aria-hidden className="size-7" />
@@ -93,7 +100,7 @@ export function QuoteDocument({ quote, shop, photoSrc, className }: QuoteDocumen
           <span className="text-sm">الإجمالي</span>
           <span className="text-xs">العربون المطلوب: {formatCurrency(quote.depositAmount)}</span>
         </div>
-        <span className="text-[32px] font-bold leading-10 text-ink">{formatCurrency(quote.total)}</span>
+        <span className="whitespace-nowrap text-3xl font-bold leading-10 text-ink @min-[30rem]:text-[32px]">{formatCurrency(quote.total)}</span>
       </div>
       <p className="m-0 text-xs text-ink-muted">
         السعر تقديري ويتأكد بعد المعاينة.

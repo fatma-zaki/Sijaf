@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { mobileSchema } from "./phone.js";
+import { optionalMobileSchema } from "./phone.js";
 
 // ---------- القيم الثابتة وأسماؤها بالعربي ----------
 
@@ -95,7 +95,7 @@ const requiredMoney = (label: string) =>
 
 const optionalText = (max: number) => z.string().trim().max(max, "النص طويل زيادة").default("");
 
-const optionalMobile = z.union([mobileSchema, z.literal("").transform(() => null), z.null()]).default(null);
+const optionalMobile = optionalMobileSchema;
 
 // ---------- الموردين ----------
 

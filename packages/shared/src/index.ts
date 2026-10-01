@@ -1,5 +1,6 @@
 export * from "./auth.js";
 export * from "./catalog.js";
+export * from "./clients.js";
 export * from "./errors.js";
 export * from "./phone.js";
 export * from "./pricing/geometry.js";
@@ -7,6 +8,9 @@ export * from "./pricing/engine.js";
 export * from "./pricing/model-extras.js";
 export * from "./pricing/rules.js";
 export * from "./quotes.js";
+export * from "./reports.js";
+export * from "./schedule.js";
 export * from "./shop.js";
 export * from "./text.js";
+export * from "./time.js";
 export * from "./users.js";

@@ -44,5 +44,6 @@ npm run dev        # web: http://localhost:3000 · api: http://localhost:4000
   - `API_BASE_URL` — رابط مشروع الـ API (من غير `/` في الآخر)
   - `INTERNAL_API_SECRET` — نفس قيمة الـ API
   - `NEXT_PUBLIC_APP_URL` — رابط الويب النهائي
+- الـ PDF بيتعمل بـ Chromium جوه الـ function (`@sparticuz/chromium`)؛ لو ظهر خطأ ذاكرة زوّد الـ Memory للـ function لـ 1024MB أو أكتر.
 
 > لو الباسورد بتاعة قاعدة البيانات فيها `@` أو `#` لازم تتكتب encoded في الرابط (`@` ← `%40`).

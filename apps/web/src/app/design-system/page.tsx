@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Clock, FileText, Inbox, Layers, Pencil, Plus, Search as SearchIcon, Send, Trash2, Upload, Users, CircleCheck } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
+import { BarChart } from "@/components/ui/bar-chart";
 import { Button, buttonStyles } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfidenceBadge, ConfidenceMeter } from "@/components/ui/confidence";
@@ -12,6 +13,7 @@ import { Field, Input, InputWithUnit, Select, Textarea } from "@/components/ui/f
 import { InfoNote } from "@/components/ui/info-note";
 import { Logo } from "@/components/ui/logo";
 import { Pagination } from "@/components/ui/pagination";
+import { MetricCard } from "@/components/ui/metric-card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { SearchField } from "@/components/ui/search-field";
 import { StatCard } from "@/components/ui/stat-card";
@@ -140,6 +142,8 @@ export default function DesignSystemPage() {
           <StatCard value="142" label="إجمالي العملاء" delta="+18" icon={<Users aria-hidden />} />
           <StatCard value="24" label="إجمالي العروض هذا الشهر" delta="+12%" icon={<FileText aria-hidden />} />
           <StatCard value="16" label="عروض قبلها العملاء" icon={<CircleCheck aria-hidden />} />
+          <StatCard value="8" label="عروض اليوم" delta="-20%" icon={<FileText aria-hidden />} />
+          <MetricCard label="قيمة العروض المقبولة" value="164,300 ج.م" hint="16 عرض · نسبة القبول 67%" />
         </div>
         <Card>
           <CardHeader>
@@ -209,6 +213,17 @@ export default function DesignSystemPage() {
           <ConfidenceMeter icon={<Layers aria-hidden />} label="القماش الأساسي" value={88} />
         </div>
         <ProgressBar label="تقدم التحليل" value={65} className="max-w-120" />
+        <BarChart
+          label="عدد العروض"
+          unit="عرض"
+          className="max-w-120"
+          data={[
+            { label: "أبريل", value: 14 },
+            { label: "مايو", value: 17 },
+            { label: "يونيو", value: 15 },
+            { label: "يوليو", value: 21 },
+          ]}
+        />
       </Section>
 
       <Section title="رفع الصورة">

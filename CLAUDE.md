@@ -34,6 +34,11 @@ design/          التصميم (مصدر الحقيقة للشكل)
 - الكتالوج (`src/catalog/`): `purchase_price` في `materials` بيطلع في `MaterialDto` لصاحب المحل بس؛ الفني بياخد `MaterialPublicDto` من `/materials/options`. أي endpoint جديد بيرجّع خامات لازم يفرّق بالـ role، وليه تيست إن الفني مايشوفش سعر الشراء.
 - القوالب («ابدأ بأسعار نموذجية» و«8 موديلات جاهزة») في `src/catalog/templates.ts`؛ الموديلات بتتضاف لكل محل جديد عند التسجيل.
 - مطابقة الأسماء العربي (موردين/خامات) بـ `arabicKey` من shared (بيوحّد أ/إ/آ وة/ه وى/ي).
+- صفحة العميل: `src/quotes/public-*.ts` تحت `@Public()` بالـ `publicToken` العشوائي، وبترجع `PublicQuoteDto` بس (من غير موبايل العميل ولا الملاحظات ولا التكاليف ولا أسعار الوحدة). أي حقل جديد فيها ليه تيست إنه مش بيسرّب حاجة.
+- سجل العرض (`quote_events`) بيتكتب من الـ service مع كل حدث؛ الويب بيحوّله لنصوص في `components/features/quotes/quote-events.ts`.
+- التواريخ بتوقيت القاهرة (فيها توقيت صيفي): الأيام `YYYY-MM-DD` والساعات `HH:mm` بتتحول لـ UTC بـ `cairoToUtc` من shared (`time.ts`)، والأسبوع بيبدأ السبت (`weekStart`). أي query بفترة بتتحسب حدودها كده مش بـ `new Date()` على السيرفر.
+- المواعيد (`src/schedule/`): كل الفريق بيشوفها، و`@Quoters()` بس اللي بيحدد/يعدّل. الفني في الرئيسية بيشوف مواعيده بس. الموعد المربوط بعرض بيكتب `appointment_scheduled` في سجله.
+- التقارير (`/reports`) لصاحب المحل بس (فيها الربح من `quote_items.unit_cost`)؛ `/dashboard` و`/team` و`/clients` لكل الفريق ومن غير أسعار شراء.
 
 ## الفرونت (`apps/web`)
 
@@ -48,6 +53,8 @@ design/          التصميم (مصدر الحقيقة للشكل)
 - المكوّنات اللي بتتحط في أعمدة عرضها متغير تستخدم container queries (`@container` و`@min-[46rem]:`) مش breakpoints الشاشة.
 - معادلات الأمتار والبنود الإضافية في `packages/shared/src/pricing` (functions نقية ومتختبرة)؛ الفرونت بيستخدمها للمعاينة والباك للحساب.
 - الصور بتتضغط في المتصفح قبل الرفع (`lib/image/compress.ts`: JPEG، أطول ضلع 1400px) وبتترفع لـ route handler مش Server Action (حد الحجم).
+- صفحة العميل `/q/[token]` (مفتوحة من غير دخول، noindex) وصورها من `/q/[token]/photo|logo`. «العميل فتح الرابط» بيتسجل من المتصفح (`OpenedBeacon`) مش من السيرفر، عشان معاينة الرابط في واتساب مابتتحسبش، ومابيتسجلش لو فيه جلسة حد من المحل.
+- الـ PDF (`/q/[token]/pdf`) بيطبع `/q/[token]/print` بـ Chromium على السيرفر (`lib/pdf.ts`): على Vercel من `@sparticuz/chromium`، ومحليًا Edge/Chrome أو `CHROME_EXECUTABLE_PATH`. العرض نفسه مكوّن واحد `QuoteDocument` للصفحة والطباعة والتطبيق.
 
 ## التصميم
 

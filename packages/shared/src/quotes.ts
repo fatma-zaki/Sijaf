@@ -178,6 +178,109 @@ export type QuoteDto = {
   validUntil: string | null;
   createdAt: string;
   createdByName: string | null;
+  /** للرابط العام /q/[token] */
+  publicToken: string;
+  /** مابتظهرش للعميل */
+  internalNotes: string;
+  finalTotal: number | null;
 };
 
 export type AnalyzeResultDto = { status: AnalysisStatus; quote: QuoteDto };
+
+// ---------- قايمة العروض ----------
+
+export const quoteListQuerySchema = z.object({
+  /** اسم العميل أو موبايله أو رقم العرض */
+  q: z.string().trim().max(80).optional(),
+  status: z.enum(quoteStatuses).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(10),
+});
+export type QuoteListQuery = z.input<typeof quoteListQuerySchema>;
+export type QuoteListQueryData = z.output<typeof quoteListQuerySchema>;
+
+export type QuoteListItemDto = {
+  id: string;
+  number: number;
+  status: QuoteStatus;
+  clientName: string;
+  clientPhone: string;
+  roomLabel: string;
+  modelName: string | null;
+  tier: Tier | null;
+  total: number;
+  createdAt: string;
+};
+
+export type QuoteListDto = {
+  items: QuoteListItemDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+  /** عدد العروض في كل حالة (من غير فلتر الحالة) */
+  counts: Record<QuoteStatus | "all", number>;
+};
+
+// ---------- الحالة والملاحظات ----------
+
+export const updateQuoteSchema = z
+  .object({
+    status: z.enum(quoteStatuses, { error: "اختار حالة من القايمة" }).optional(),
+    internalNotes: z.string().trim().max(1000, "الملاحظات طويلة زيادة").optional(),
+    /** السعر النهائي بعد المعاينة (لدقة التسعير في التقارير)؛ null يمسحه */
+    finalTotal: z.union([money, z.null()]).optional(),
+  })
+  .refine((data) => data.status !== undefined || data.internalNotes !== undefined || data.finalTotal !== undefined, "مفيش تغيير");
+export type UpdateQuoteInput = z.input<typeof updateQuoteSchema>;
+export type UpdateQuoteData = z.output<typeof updateQuoteSchema>;
+
+// ---------- سجل العرض ----------
+
+export const quoteEventTypes = [
+  "created",
+  "photo_added",
+  "analyzed",
+  "component_changed",
+  "priced",
+  "status_changed",
+  "sent_whatsapp",
+  "link_opened",
+  "pdf_downloaded",
+  "appointment_scheduled",
+] as const;
+export type QuoteEventType = (typeof quoteEventTypes)[number];
+
+export type QuoteEventDto = {
+  id: string;
+  type: QuoteEventType;
+  /** null لما العميل هو اللي عمل الحاجة (فتح الرابط مثلًا) */
+  actorName: string | null;
+  payload: Record<string, unknown>;
+  createdAt: string;
+};
+
+// ---------- صفحة العميل (/q/[token]) ----------
+
+/** اللي العميل يشوفه بس: من غير موبايله ولا ملاحظات ولا تكاليف ولا التوكن */
+export type PublicQuoteDto = {
+  number: number;
+  status: QuoteStatus;
+  client: { name: string };
+  roomLabel: string;
+  widthCm: number | null;
+  heightCm: number | null;
+  windowCount: number;
+  modelName: string | null;
+  tier: Tier | null;
+  items: Pick<QuoteItemDto, "key" | "kind" | "label" | "total">[];
+  discount: number;
+  total: number;
+  depositAmount: number;
+  validUntil: string | null;
+  createdAt: string;
+  hasPhoto: boolean;
+  shop: { name: string; whatsapp: string | null; address: string; hasLogo: boolean };
+};
+
+/** أقل مدة بين تسجيلين لـ «العميل فتح الرابط» */
+export const LINK_OPENED_COOLDOWN_MINUTES = 30;
