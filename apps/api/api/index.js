@@ -21,6 +21,16 @@ export default async function handler(req, res) {
     appPromise = undefined;
     throw error;
   });
-  const app = await appPromise;
+  let app;
+  try {
+    app = await appPromise;
+  } catch (error) {
+    // مؤقت لحد ما الديبلوي يشتغل: سبب فشل التشغيل بيظهر في الرد (أسماء متغيرات مش قيمها)
+    console.error(error);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.end(`startup failed:\n${error instanceof Error ? error.message : String(error)}`);
+    return;
+  }
   return app(req, res);
 }
