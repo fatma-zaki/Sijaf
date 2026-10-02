@@ -1,13 +1,15 @@
 // نقطة الدخول على Vercel: نفس التطبيق اللي في src/main.ts بس من غير listen،
 // وVercel بيبعت كل الطلبات هنا (شوف vercel.json). بيستخدم البناء اللي في dist.
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../dist/app.module.js';
-import { configureApp } from '../dist/configure-app.js';
-import { loadEnv } from '../dist/config/env.js';
 
 let appPromise;
 
 async function createApp() {
+  const [{ NestFactory }, { AppModule }, { configureApp }, { loadEnv }] = await Promise.all([
+    import('@nestjs/core'),
+    import('../dist/app.module.js'),
+    import('../dist/configure-app.js'),
+    import('../dist/config/env.js'),
+  ]);
   loadEnv();
   const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'] });
   configureApp(app);
