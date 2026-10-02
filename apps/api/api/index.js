@@ -9,11 +9,11 @@ export default async function handler(req, res) {
     const appHandler = await handlerPromise;
     await appHandler(req, res);
   } catch (error) {
+    // فشل التشغيل (غالبًا متغير بيئة ناقص): السبب في Logs بتاعة Vercel، والطلب الجاي يجرب تاني
     handlerPromise = undefined;
-    // مؤقت لحد ما الديبلوي يشتغل: سبب فشل التشغيل بيظهر في الرد (أسماء متغيرات مش قيمها)
     console.error(error);
     res.statusCode = 500;
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.end(`startup failed (node ${process.version}):\n${error instanceof Error ? error.message : String(error)}`);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify({ statusCode: 500, message: 'Internal server error' }));
   }
 }
