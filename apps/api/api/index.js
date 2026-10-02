@@ -31,7 +31,8 @@ export default async function handler(req, res) {
     console.error(error);
     res.statusCode = 500;
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.end(`startup failed:\n${error instanceof Error ? error.message : String(error)}`);
+    const runtime = `node ${process.version}, require_module=${String(process.features.require_module)}`;
+    res.end(`startup failed (${runtime}):\n${error instanceof Error ? error.message : String(error)}`);
     return;
   }
   return app(req, res);
